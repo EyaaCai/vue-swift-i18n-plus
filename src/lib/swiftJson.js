@@ -34,13 +34,20 @@ const resoloveLine = ({
 }) => {
   let text = lineText.replace(reg, (str) => {
     let temp = str;
+    const tFunc = isTS || isSetup ? 't' : '$t';
     if (reg === propertyRegexp) {
-      const prefix = temp.split('=')[0].replace(resoloveReg, ' :');
+      const attrPart = temp.split('=')[0].replace(resoloveReg, '');
+      const prefix =
+        attrPart.startsWith(':') ||
+        attrPart.startsWith('@') ||
+        attrPart.startsWith('v-')
+          ? ` ${attrPart}`
+          : ` :${attrPart}`;
       const mainStr = temp.split('=')[1].replace(resoloveMainReg, '');
       const result = localeObj[mainStr];
       if (result) {
         //$t("xx")   template下 属性替换
-        return `${prefix}="$t('${result}')"`;
+        return `${prefix}="${tFunc}('${result}')"`;
       }
     } else {
       const resultStr = str.replace(resoloveReg, '');
@@ -48,7 +55,7 @@ const resoloveLine = ({
       if (result) {
         //{{$t("xx")}}   template下 html替换
         if (reg === angleBracketSpaceRegexp) {
-          return "{{$t('" + result + "')}}";
+          return `{{${tFunc}('${result}')}}`;
         }
 
         if (reg === scriptRegexp) {
@@ -62,7 +69,7 @@ const resoloveLine = ({
 
           //$t("xx")   template下 {{ "汉字" }}替换
           if (isTemplate) {
-            return "$t('" + result + "')";
+            return `${tFunc}('${result}')`;
           }
         }
       }

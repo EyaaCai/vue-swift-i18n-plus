@@ -20,14 +20,16 @@ const commentRegexp = /(\/\/)|(<!--)|(\/\*)/g;
 const scriptRegexp = /["'`][\u4e00-\u9fa5][^"'`]*?["'`]/g;
 
 //匹配属性中的汉字 √
-const propertyRegexp = /\s\S+=["'`][\u4e00-\u9fa5][^"'`]*?["'`]/g;
+const propertyRegexp =
+  /\s[:\w\.\-\@\#]+=["'](?:['"])?[\u4e00-\u9fa5][^"'`]*?(?:['"])?["']/g;
 
 // 单行  匹配 template ><下，空行的汉字（retrieve） ,
 const angleBracketSpaceRegexp =
   /((?<=\s)[\u4e00-\u9fa5][^\s\<\>]*|(?<=[>\s])[\u4e00-\u9fa5][^\s\<\>|\n]*(?=[\s<]))/g;
 
 //匹配到特殊字符串说明前面正则匹配有问题，给出提示，去掉匹配
-const warnRegexp = /[{}<>:]/g;
+const warnRegexp = /[{}<>]/g;
+const attributeQuotationRegexp = /["']/g;
 
 // 匹配 $t替换的字符串
 const dollarTRegexp = /(?<=(\$t|i18n\.t)\(["'])[^'"]+/gm;
@@ -48,4 +50,5 @@ module.exports = {
   commentRegexp,
   dollarTRegexp,
   scriptSetupRegexp,
+  attributeQuotationRegexp,
 };

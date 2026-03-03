@@ -8,6 +8,7 @@ const {
   spaceRegexp,
   commentRegexp,
   warnRegexp,
+  attributeQuotationRegexp,
 } = require('./regex');
 
 const getLineCnWord = ({ lineText, reg, resoloveReg, initWordArr = [] }) => {
@@ -20,7 +21,7 @@ const getLineCnWord = ({ lineText, reg, resoloveReg, initWordArr = [] }) => {
           return false;
         } else {
           return reg === propertyRegexp
-            ? v.split('=')[1].replace(resoloveReg, '')
+            ? v.split('=')[1].replace(attributeQuotationRegexp, '')
             : v.replace(resoloveReg, '');
         }
       })
