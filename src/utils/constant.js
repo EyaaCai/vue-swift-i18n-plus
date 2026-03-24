@@ -15,28 +15,29 @@ const constants = {
     'javascriptreact',
   ],
   operation: {
-    flatJson: { cmd: 'vueSwiftI18n.flatJson', title: 'Flat Json' },
-    unFlatJson: { cmd: 'vueSwiftI18n.unFlatJson', title: 'unFlat Json' },
+    flatJson: { cmd: 'vueSwiftI18nPlus.flatJson', title: 'Flat Json' },
+    unFlatJson: { cmd: 'vueSwiftI18nPlus.unFlatJson', title: 'unFlat Json' },
     showI18n: {
-      cmd: 'vueSwiftI18n.showI18n',
+      cmd: 'vueSwiftI18nPlus.showI18n',
       title: 'Show I18n Translate Detail',
     },
     updateI18n: {
-      cmd: 'vueSwiftI18n.updateI18n',
+      cmd: 'vueSwiftI18nPlus.updateI18n',
       title: 'Update I18n Locales Json',
     },
     generateRichieRC: {
-      cmd: 'vueSwiftI18n.generateRichieRC',
+      cmd: 'vueSwiftI18nPlus.generateRichieRC',
       title: 'Generate scope config file',
     },
-    swiftI18n: { cmd: 'vueSwiftI18n.swiftI18n', title: 'Swift I18n' },
-    hoverI18n: { cmd: 'vueSwiftI18n.hoverI18n', title: 'Hover I18n' },
-    openI18nFile: { cmd: 'vueSwiftI18n.openI18nFile', title: 'Open File' },
+    swiftI18n: { cmd: 'vueSwiftI18nPlus.swiftI18n', title: 'Swift I18n' },
+    hoverI18n: { cmd: 'vueSwiftI18nPlus.hoverI18n', title: 'Hover I18n' },
+    openI18nFile: { cmd: 'vueSwiftI18nPlus.openI18nFile', title: 'Open File' },
+    generateI18nFiles: { cmd: 'vueSwiftI18nPlus.generateI18nFiles', title: 'Generate Split I18n Files' },
   },
   plugin: {
-    name: 'vue-swift-i18n',
+    name: 'vue-swift-i18n-plus',
     congratulations:
-      'Congratulations, your extension "vue-swift-i18n" is now active!',
+      'Congratulations, your extension "vue-swift-i18n-plus" is now active!',
     noUri: 'please selected a json file first',
   },
   defaultConfig: {

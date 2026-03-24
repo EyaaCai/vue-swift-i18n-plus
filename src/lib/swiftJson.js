@@ -101,12 +101,21 @@ module.exports = ({ editor, context }) => {
     showInfo: false,
   });
   if (!exist) return;
+
+  const { useCompactPathMode, useHashKeyOnly } = getCustomSetting(
+    currentEditor.document.uri.fsPath,
+    ['useCompactPathMode', 'useHashKeyOnly'],
+  );
+
   fs.readFile(localesPath, (err, data) => {
     if (!err) {
       const _data = JSON.parse(data.toString());
       const localeObj = changeObjeValueKey(
-        getValueFromDotString(_data, prefix),
+        useCompactPathMode
+          ? _data[prefix]
+          : getValueFromDotString(_data, prefix),
         prefix,
+        useHashKeyOnly,
       );
       // flatten(JSON.parse(data.toString()))[prefix] || {}
       if (!localeObj || Object.keys(localeObj).length === 0) {

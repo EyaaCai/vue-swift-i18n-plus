@@ -51,6 +51,11 @@ const tipBeforeWriteJson = (currentEditor, localesPath) => {
 const writeJson = (currentEditor, localesPath, puidType) => {
 	const linesObj = retrieveCN(currentEditor, puidType);
 	const prefix = getPrefix(currentEditor);
+	const { useCompactPathMode } = getCustomSetting(
+		currentEditor.document.uri.fsPath,
+		["useCompactPathMode"]
+	);
+
 	fs.readFile(localesPath, (err, data) => {
 		let _data;
 		if (err) {
@@ -58,13 +63,17 @@ const writeJson = (currentEditor, localesPath, puidType) => {
 		} else {
 			_data = !data.toString() ? {} : JSON.parse(data.toString());
 		}
-		let temp = getValueFromDotString(_data, prefix);
+
+		let temp = useCompactPathMode
+			? _data[prefix]
+			: getValueFromDotString(_data, prefix);
+
 		if (Object.keys(linesObj).length !== 0) {
 			//已存在 => 智能替换（1.相同val时，新的key,val替换原来的key,val。2.不同val时，保存新增key,val和原有的key,val,）
-			Object.keys(linesObj).forEach(v => {
-				if (!temp || Object.keys(temp).length === 0) {
-					_data[prefix] = linesObj;
-				} else {
+			if (!temp || Object.keys(temp).length === 0) {
+				temp = linesObj;
+			} else {
+				Object.keys(linesObj).forEach(v => {
 					Object.keys(temp).forEach(p => {
 						if (temp[p] === linesObj[v]) {
 							delete temp[p];
@@ -73,9 +82,15 @@ const writeJson = (currentEditor, localesPath, puidType) => {
 							temp[v] = linesObj[v];
 						}
 					});
-					_data[prefix] = temp;
-				}
-			});
+				});
+			}
+
+			if (useCompactPathMode) {
+				_data[prefix] = temp;
+			} else {
+				// 保持原有逻辑，不支持层级直接赋值
+				_data[prefix] = temp;
+			}
 		} else {
 			showMessage({
 				message: "There are no Chinese match in :",
@@ -84,7 +99,8 @@ const writeJson = (currentEditor, localesPath, puidType) => {
 			});
 			return;
 		}
-		let str = JSON.stringify(unflatten(_data), null, 4);
+		console.log('Final Data Keys Before Stringify:', Object.keys(_data));
+		let str = JSON.stringify(_data, null, 4);
 		fs.writeFile(localesPath, str, err => {
 			if (!err) {
 				showMessage({

@@ -27,14 +27,16 @@ const {
   customConfigFileName,
   pkgFileName,
 } = require('./constant');
-const settings = workspace.getConfiguration('vueSwiftI18n');
 const isObject = (obj) =>
   Object.prototype.toString.call(obj) === '[object Object]';
 
-const getCustomSettingKey = (customSetting, key) =>
-  customSetting && customSetting.hasOwnProperty(key)
-    ? customSetting[key]
-    : settings.get(key);
+const getCustomSettingKey = (customSetting, key) => {
+  if (customSetting && customSetting.hasOwnProperty(key)) {
+    return customSetting[key];
+  }
+  const settings = workspace.getConfiguration('vueSwiftI18nPlus');
+  return settings.get(key);
+};
 
 const showMessage = ({
   type = 'info',
@@ -120,52 +122,69 @@ const getCustomSetting = (fsPath, key, forceIgnoreCustomSetting = false) => {
 };
 
 const getPrefix = (currentEditor) => {
-  const { languageId, uri } = currentEditor.document;
+  const { uri } = currentEditor.document;
   let fileName = path.basename(uri.fsPath, path.extname(uri.fsPath));
+  const fileFsPath = uri.fsPath;
 
   const {
     modulePrefix,
     notUseFileNameAsKey = false,
     fileNameSubstitute = 'components',
     jsonNameLevel = 0,
-  } = getCustomSetting(currentEditor.document.uri.fsPath, {
+    useCompactPathMode = false,
+    useCompactModeBasePath = 'src',
+  } = getCustomSetting(fileFsPath, {
     modulePrefix: 'modulePrefixFoUpdateJson',
     notUseFileNameAsKey: 'notUseFileNameAsKey',
     jsonNameLevel: 'parentDirLevel',
+    useCompactPathMode: 'useCompactPathMode',
+    useCompactModeBasePath: 'useCompactModeBasePath',
   });
-  let prefix;
-  if (jsonNameLevel > 0 && notUseFileNameAsKey) {
-    prefix = path
-      .dirname(currentEditor.document.uri.fsPath)
-      .split(path.sep)
-      .slice(-jsonNameLevel)
-      .filter((v) => !!v)
-      .join('.');
-  } else if (jsonNameLevel > 0) {
-    prefix = connect(
-      path
-        .dirname(currentEditor.document.uri.fsPath)
-        .split(path.sep)
-        .slice(-jsonNameLevel)
-        .filter((v) => !!v)
-        .join('.'),
-      fileName,
-    );
-  } else {
-    if (notUseFileNameAsKey) {
-      prefix = '';
-    } else {
-      prefix = fileName;
+
+  let prefix = '';
+
+  if (useCompactPathMode) {
+    const workspaceFolder = workspace.getWorkspaceFolder(uri);
+    if (workspaceFolder) {
+      const rootPath = workspaceFolder.uri.fsPath;
+      const absoluteBasePath = path.isAbsolute(useCompactModeBasePath)
+        ? useCompactModeBasePath
+        : path.join(rootPath, useCompactModeBasePath);
+
+      try {
+        const relativeDir = path.relative(
+          absoluteBasePath,
+          path.dirname(fileFsPath),
+        );
+        if (relativeDir && relativeDir !== '.') {
+          prefix = relativeDir
+            .split(path.sep)
+            .filter((v) => !!v)
+            .join('.');
+        }
+      } catch (e) {
+        prefix = '';
+      }
     }
+  } else if (jsonNameLevel > 0) {
+    const dirs = path
+      .dirname(fileFsPath)
+      .split(path.sep)
+      .filter((v) => !!v)
+      .slice(-jsonNameLevel);
+    prefix = dirs.join('.');
   }
 
-  if (modulePrefix && prefix) {
-    prefix = connect(modulePrefix, prefix);
-  } else if (modulePrefix) {
-    prefix = modulePrefix;
+  if (!notUseFileNameAsKey) {
+    prefix = prefix ? connect(prefix, fileName) : fileName;
   } else if (!prefix) {
     prefix = fileNameSubstitute;
   }
+
+  if (modulePrefix) {
+    prefix = prefix ? connect(modulePrefix, prefix) : modulePrefix;
+  }
+
   return prefix;
 };
 
@@ -296,11 +315,12 @@ const getLocales = ({
   }
 };
 
-const changeObjeValueKey = (obj, prefix) => {
+const changeObjeValueKey = (obj, prefix, useHashKeyOnly = false) => {
   const result = {};
+  if (!obj) return result;
   Object.keys(obj).forEach((v) => {
     if (!result[obj[v]]) {
-      result[obj[v]] = connect(prefix, v);
+      result[obj[v]] = useHashKeyOnly ? v : connect(prefix, v);
     }
   });
   return result;

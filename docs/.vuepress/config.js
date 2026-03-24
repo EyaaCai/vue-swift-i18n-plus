@@ -2,8 +2,8 @@ const fs = require("fs");
 const path = require("path");
 const nav = require("./nav");
 module.exports = {
-	title: "Vue Swift I18n",
-	description: "vscode 极速国际化插件（vue-i18n）",
+	title: "Vue Swift I18n Plus",
+	description: "vscode 极速国际化插件（vue-i18n 增强版）",
 	head: [["link", { rel: "icon", href: "/logo.png" }]],
 	themeConfig: {
 		logo: "/logo.png",
@@ -15,7 +15,7 @@ module.exports = {
 				{
 					title: "深入",
 					path: "../guide",
-					children: ["1-update-i18n", "2-swift-i18n", "3-show-i18n", "4-other"],
+					children: ["1-update-i18n", "2-swift-i18n", "3-show-i18n", "4-other", "5-split-i18n"],
 				},
 			]),
 			"/config/": getAutoSideBar([{ title: "配置", path: "../config" }]),

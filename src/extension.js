@@ -7,6 +7,7 @@ const updateI18n = require('./updateI18n');
 const hoverI18n = require('./hoverI18n');
 const openI18nFile = require('./openI18nFile');
 const generateRichieRC = require('./generateRichieRC');
+const generateI18nFiles = require('./generateI18nFiles');
 
 function activate(context) {
 	// register
@@ -35,9 +36,11 @@ function activate(context) {
 	// generate config file : richierc.json
 	generateRichieRC(context);
 
+	// generate split i18n files
+	generateI18nFiles(context);
+
 	msg.info(`${plugin.name} 已激活！`);
 }
-exports.activate = activate;
 function deactivate() {
 	msg.info(`${plugin.name} 已移除！`);
 }

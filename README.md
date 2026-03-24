@@ -1,41 +1,37 @@
-# Vue i18n
+# Vue Swift i18n Plus
 
-## ✨ 快速开始
+## 🚀 简介 / Introduction
 
-![vue-swift-i18n](swift.gif)
+`Vue Swift i18n Plus` 是一款专为 Vue 和 Javascript/TypeScript 开发者设计的国际化自动化利器。它是基于开源项目 `vue-swift-i18n` 的深度增强版，旨在彻底解决手动维护国际化字典的繁琐工作。
 
-## 契子
+---
 
-现有项目国际化非常的繁琐:
+## 🔥 核心增强功能 / Key Features
 
-1. 将所有出现的要国际化的汉字复制取名配置
-1. 在 vue/js 文件中找到汉字位置，区分是在`template`中标签的`label`或者其他`property`中，或者`{{}}`中`script`，又或者`script`中的，手动将一层一层的国际化 key 拷贝，粘贴。
-1. 就算是相同的汉子，由于在 vue 中的语法不同，需要重复的拷贝，粘贴
-1. 碰到一堆汉字拼接的简直要了老命/(ㄒ o ㄒ)/~~
+1. **支持 Vue3 和 TypeScript(Vue 3 and TypeScript)**: 支持 TypeScript 与 Vue 3 script setup 国际化方案。
+2. **多模块拆分逻辑 (Split & Append Logic)**:
+   - 支持将庞大的扁平字典自动按照 `key` 路径拆分为目录式的子文件（例如：`views/account.ts`）。
+   - 当目标文件已存在时，自动识别差异，仅在对象末尾追加新增的 Key，且**保留原文件中的代码注释和代码格式**。
+3. **实时配置生效**: 无需重启扩展，修改插件配置后即可立即应用于编辑器环境。
 
-## 设计
+---
 
-![design.png](https://cdn.nlark.com/yuque/0/2020/png/111625/1582165204110-151c4717-556e-443e-8975-cb29cbcbe83f.png 'design')
+## 🛠️ 快速开始 / Quick Start
 
-## 插件功能
+1. 安装 `Vue Swift i18n Plus` 扩展。
+2. 根据需要配置 `vueSwiftI18nPlus.defaultLocalesPath`。
+3. 在代码中使用 `Ctrl+Alt+U` (Windows) 或 `Ctrl+Cmd+U` (Mac) 提取汉字。
+4. 使用 `Ctrl+Alt+I` 执行快速替换。
 
-1. 检测 vue/js 中的需要国际化的汉字，自动生成 json 文件
-1. 根据 json 文件检测 vue/js,检测汉字，自动替换成步骤 1 生成的 json 的 key
-1. 检测 vue/js 文件中的已替换的 key，展示对应汉字提示弹窗
-1. xxx.json 文件中，生成扁平化的 locales 的 xxx_flat.json 文件,方便取值复制
-1. 在 vue/js 中提供，提供 t,tt,ttt 代码提示
+---
 
-## TODO
+## 📜 许可证 & 致敬 / License & Credits
 
-- [x] 国际化 json 文件名可配置
-- [x] 悬浮展示 i18n value，跳转 json 文件
-- [x] 通过项目配置文件获取配置 settings,其中项目配置文件优先级最高(richierc.json)
-- [x] 增加 puidType 配置，默认使用`short`类型（12 位),提供`long`类型（24 位），生成唯一 key
-- [x] 使用 JSON AST 代替 RegExp 优化跳转体验
-- [ ] 增加 webview 展示替换更新等提醒界面
-- [ ] 支持 JS I18n 文件写入与读取
+- 本插件继承并遵循 **MIT License**。
+- **致敬**: 感谢原作者 [RichieChoo](https://github.com/RichieChoo) 开发的基础版本 `vue-swift-i18n`。本版本在此基础上进行了逻辑重构与功能增强，以满足更复杂的生产环境需求。
 
-## 赞赏
+---
 
-如果插件给您带来便利,欢迎 star 或 赞赏哦
-![star或者好评我给你返现，加我好友吧！](https://cdn.nlark.com/yuque/0/2020/png/111625/1591099372734-9be6b399-dc8e-4b2b-9313-b2f6b4c0169c.png 'star或者好评我给你返现，加我好友吧！')
+## 💎 赞赏与反馈 / Appreciation & Feedback
+
+如果您觉得由于本插件的帮助提高了您的效率，欢迎 Star 支持。

@@ -1,36 +1,27 @@
----
-home: true
-heroImage: /logo.png
-actionText: 快速上手 →
-actionLink: /guide/
-features:
-- title: 快速生成i18n文件
-  details: 通过正则检测中文，快速产出json文件到对应国际化目录
-- title: 极速替换
-  details: 通过检测中文在vue文件位置，使用相应的vue及vue-i18n语法快速替换中文
-- title: 便捷展示
-  details: 极速展示vue文件对应国际化前的含义（现仅支持中文）
-footer: MIT Licensed | Copyright © 2019-present Richie Choo
----
+# Vue Swift I18n Plus
 
 像数 1, 2, 3, 4, 5 一样容易 :wink:
 
 ``` bash
 # 安装
-ext install RichieChoo.vue-swift-i18n
+ext install Eyaa.vue-swift-i18n-plus
+```
 
-# 使用idea打开vue项目的一个.vue文件
+::: tip 亮点功能
+支持 Vue 3 `script setup` 语法，支持 TypeScript，支持自动拆分 i18n 多文件模块，并支持在原有文件中智能追加新 Key 且保留注释。
+:::
 
-# 生成/更新i18n json 文件
+## 快速上手
+
+# 生成/更新 i18n JSON 文件
 Ctrl + Alt + U # Ctrl + Cmd + U
 
-# 替换vue中需要国际化的汉字
+# 替换 Vue 中需要国际化的汉字
 Ctrl + Alt + I # Ctrl + Cmd + I
 
-# 查看已经替换的i18n对应值
+# 查看已经替换的 i18n 对应值
 Ctrl + Alt + O # Ctrl + Cmd + O
 
-```
 ::: warning 注意
 请确保你的 Vscode 版本 >= 1.37。
 :::
