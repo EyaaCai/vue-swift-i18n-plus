@@ -111,9 +111,8 @@ module.exports = ({ editor, context }) => {
     if (!err) {
       const _data = JSON.parse(data.toString());
       const localeObj = changeObjeValueKey(
-        useCompactPathMode
-          ? _data[prefix]
-          : getValueFromDotString(_data, prefix),
+        _data[prefix] ||
+          (useCompactPathMode ? null : getValueFromDotString(_data, prefix)),
         prefix,
         useHashKeyOnly,
       );

@@ -2,7 +2,28 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 const { getCustomSetting, getLocales, showMessage, getEditor } = require('../utils/index');
+const { executeCommand, file, WorkspaceEdit, workspace } = require('../utils/vs');
 const safeEval = require('safe-eval');
+
+const formatFiles = async (filePaths) => {
+  const edit = new WorkspaceEdit();
+  for (const filePath of filePaths) {
+    const uri = file(filePath);
+    const edits = await executeCommand('vscode.executeFormatDocumentProvider', uri);
+    if (Array.isArray(edits) && edits.length) {
+      edit.set(uri, edits);
+    }
+  }
+  await workspace.applyEdit(edit);
+  for (const filePath of filePaths) {
+    try {
+      const doc = await workspace.openTextDocument(file(filePath));
+      await doc.save();
+    } catch (e) {
+      console.error(`Failed to save formatted file: ${filePath}`, e);
+    }
+  }
+};
 
 module.exports = ({ context, uri }) => {
   let fileFsPath;
@@ -28,11 +49,13 @@ module.exports = ({ context, uri }) => {
 
   const {
     useCompactPathMode = false,
+    useHashKeyOnly = false,
     generateI18nFilesOutputDir = 'src/i18n/lang/zh-cn',
     generateI18nFilesExt = 'auto',
     defaultLocalesPath = 'src/locales',
   } = getCustomSetting(fileFsPath, {
     useCompactPathMode: 'useCompactPathMode',
+    useHashKeyOnly: 'useHashKeyOnly',
     generateI18nFilesOutputDir: 'generateI18nFilesOutputDir',
     generateI18nFilesExt: 'generateI18nFilesExt',
     defaultLocalesPath: 'defaultLocalesPath'
@@ -56,8 +79,9 @@ module.exports = ({ context, uri }) => {
 
   if (!exist) return;
 
-  fs.readFile(localesPath, 'utf8', (err, data) => {
-    if (err) return;
+    const filesToFormat = [];
+    fs.readFile(localesPath, 'utf8', (err, data) => {
+      if (err) return;
 
     let _data = {};
     try {
@@ -90,7 +114,8 @@ module.exports = ({ context, uri }) => {
       const items = Object.keys(obj).map(k => {
         let val = obj[k] || '';
         val = val.replace(/'/g, "\\'");
-        return `  '${k}': '${val}',`;
+        const finalKey = useHashKeyOnly ? k : `${key}.${k}`;
+        return `  '${finalKey}': '${val}',`;
       });
       if (items.length === 0) return;
 
@@ -112,9 +137,10 @@ module.exports = ({ context, uri }) => {
         let existingObj = {};
         let startIndex = oldContent.indexOf('export default');
         let exportDefaultEndIndex = -1;
-        
+        let braceIndex = -1;
+
         if (startIndex !== -1) {
-          let braceIndex = oldContent.indexOf('{', startIndex);
+          braceIndex = oldContent.indexOf('{', startIndex);
           if (braceIndex !== -1) {
             let braceCount = 0;
             for (let i = braceIndex; i < oldContent.length; i++) {
@@ -137,25 +163,33 @@ module.exports = ({ context, uri }) => {
             }
           }
         }
-        
-        const newKeys = Object.keys(_data[key]).filter(k => !(k in existingObj));
-        if (newKeys.length > 0 && exportDefaultEndIndex !== -1) {
-          const newItems = newKeys.map(k => {
-            let val = String(_data[key][k] || '').replace(/'/g, "\\'");
-            return `  '${k}': '${val}',`;
-          });
-          
-          const beforeBrace = oldContent.substring(0, exportDefaultEndIndex);
-          const afterBrace = oldContent.substring(exportDefaultEndIndex);
-          const trimmedBefore = beforeBrace.trim();
-          let contentStr = '';
-          if (trimmedBefore.endsWith('{') || trimmedBefore.endsWith(',')) {
-            contentStr = beforeBrace + newItems.join('\n') + '\n' + afterBrace;
-          } else {
-            contentStr = beforeBrace + ',\n' + newItems.join('\n') + '\n' + afterBrace;
+
+        // 合并现有对象与新数据，实现“存在则更新，不存在则新增”
+        const mergedObj = { ...existingObj };
+        let hasChange = false;
+        Object.keys(_data[key]).forEach(k => {
+          const finalKey = useHashKeyOnly ? k : `${key}.${k}`;
+          const newVal = String(_data[key][k] || '');
+          if (mergedObj[finalKey] !== newVal) {
+            mergedObj[finalKey] = newVal;
+            hasChange = true;
           }
+        });
+
+        if (hasChange && exportDefaultEndIndex !== -1 && braceIndex !== -1) {
+          const mergedItems = Object.keys(mergedObj).map(fk => {
+            let val = String(mergedObj[fk]).replace(/'/g, "\\'");
+            return `  '${fk}': '${val}',`;
+          });
+
+          // 重新构造 export default 块的内容，保留括号前后的原始代码（如 import 等）
+          const beforeBrace = oldContent.substring(0, braceIndex + 1);
+          const afterBrace = oldContent.substring(exportDefaultEndIndex);
+          const contentStr = beforeBrace + '\n' + mergedItems.join('\n') + '\n' + afterBrace;
+
           try {
             fs.writeFileSync(targetFilePath, contentStr, 'utf8');
+            filesToFormat.push(targetFilePath);
           } catch (e) {
             console.error(`Failed to write targeted file: ${targetFilePath}`, e);
           }
@@ -164,14 +198,20 @@ module.exports = ({ context, uri }) => {
         const itemsToInsert = Object.keys(_data[key]).map(k => {
           let val = _data[key][k] || '';
           val = String(val).replace(/'/g, "\\'");
-          return `  '${k}': '${val}',`;
+          const finalKey = useHashKeyOnly ? k : `${key}.${k}`;
+          return `  '${finalKey}': '${val}',`;
         });
         if (itemsToInsert.length === 0) return;
         mkdirp.sync(targetDir);
         const contentStr = `export default {\n${itemsToInsert.join('\n')}\n};\n`;
         fs.writeFileSync(targetFilePath, contentStr, 'utf8');
+        filesToFormat.push(targetFilePath);
       }
     });
+
+    if (filesToFormat.length > 0) {
+      formatFiles(filesToFormat);
+    }
 
     showMessage({
       type: 'info',

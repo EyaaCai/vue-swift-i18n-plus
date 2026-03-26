@@ -64,9 +64,8 @@ const writeJson = (currentEditor, localesPath, puidType) => {
 			_data = !data.toString() ? {} : JSON.parse(data.toString());
 		}
 
-		let temp = useCompactPathMode
-			? _data[prefix]
-			: getValueFromDotString(_data, prefix);
+		let temp = _data[prefix] ||
+			(useCompactPathMode ? null : getValueFromDotString(_data, prefix));
 
 		if (Object.keys(linesObj).length !== 0) {
 			//已存在 => 智能替换（1.相同val时，新的key,val替换原来的key,val。2.不同val时，保存新增key,val和原有的key,val,）

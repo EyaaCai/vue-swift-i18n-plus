@@ -19,4 +19,5 @@ module.exports = {
 	registerHoverProvider: vscode.languages.registerHoverProvider,
 	Hover: vscode.Hover,
 	MarkdownString: vscode.MarkdownString,
+	WorkspaceEdit: vscode.WorkspaceEdit,
 };

@@ -13,6 +13,7 @@ const {
   Position,
   workspace,
   window,
+  WorkspaceEdit,
 } = require('./vs');
 const {
   templateBeginRegexp,
