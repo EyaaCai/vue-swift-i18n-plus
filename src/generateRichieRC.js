@@ -5,8 +5,9 @@ const generateRichieRC = require('./lib/generateRichieRC');
 module.exports = (context) => {
 	context.subscriptions.push(
 		registerCommand(operation.generateRichieRC.cmd, (uri) => {
-			if (uri && uri.path) {
-				openFileByPath(uri.path).then((editor) => {
+			const fsPath = uri && (uri.fsPath || uri.path);
+			if (fsPath) {
+				openFileByPath(fsPath).then((editor) => {
 					generateRichieRC({ editor, context });
 				});
 			} else {

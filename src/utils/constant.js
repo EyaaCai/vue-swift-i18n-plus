@@ -42,6 +42,7 @@ const constants = {
   },
   defaultConfig: {
     defaultLocalesPath: 'src/locales',
+    doNotDisturb: false,
     puidType: 'short',
     i18nValueHover: true,
     langFile: 'zh-cn.json',
@@ -50,6 +51,11 @@ const constants = {
     fileNameSubstitute: 'components',
     notUseFileNameAsKey: false,
     parentDirLevel: 1,
+    useCompactPathMode: false,
+    useCompactModeBasePath: 'src',
+    useHashKeyOnly: false,
+    generateI18nFilesOutputDir: 'src/i18n/lang/zh-cn',
+    generateI18nFilesExt: 'auto',
   },
 
   pkgFileName: 'package.json',

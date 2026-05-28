@@ -17,22 +17,47 @@ const scriptSetupRegexp = /<script[^>]*\ssetup\b[^>]*>/g;
 const commentRegexp = /(\/\/)|(<!--)|(\/\*)/g;
 
 //匹配js中的汉字,配合template range 判断 是否是template中的js汉字
-const scriptRegexp = /["'`][\u4e00-\u9fa5][^"'`]*?["'`]/g;
+const scriptRegexp = /["'`][^"'`\r\n]*[\u4e00-\u9fa5][^"'`\r\n]*["'`]/g;
 
 //匹配属性中的汉字 √
 const propertyRegexp =
-  /\s[:\w\.\-\@\#]+=["'](?:['"])?[\u4e00-\u9fa5][^"'`]*?(?:['"])?["']/g;
+  /\s[:\w\.\-\@\#]+=["'](?:['"])?[^"'`\r\n]*[\u4e00-\u9fa5][^"'`\r\n]*(?:['"])?["']/g;
 
 // 单行  匹配 template ><下，空行的汉字（retrieve） ,
 const angleBracketSpaceRegexp =
-  /((?<=\s)[\u4e00-\u9fa5][^\s\<\>]*|(?<=[>\s])[\u4e00-\u9fa5][^\s\<\>|\n]*(?=[\s<]))/g;
+  /(?<=>)[^<>{}\r\n]*[\u4e00-\u9fa5][^<>{}\r\n]*(?=<)/g;
 
 //匹配到特殊字符串说明前面正则匹配有问题，给出提示，去掉匹配
 const warnRegexp = /[{}<>]/g;
 const attributeQuotationRegexp = /["']/g;
 
 // 匹配 $t替换的字符串
-const dollarTRegexp = /(?<=(\$t|i18n\.t)\(["'])[^'"]+/gm;
+const dollarTRegexp =
+  /(?:(?:this\.)?\$t|i18n\.t|t)\(\s*(["'])([^"']+)\1/g;
+
+const getI18nKeyMatches = (text = '') => {
+  const matches = [];
+  let match;
+  dollarTRegexp.lastIndex = 0;
+  while ((match = dollarTRegexp.exec(text))) {
+    const key = match[2];
+    const keyIndex = match.index + match[0].lastIndexOf(key);
+    matches.push({
+      key,
+      index: keyIndex,
+      length: key.length,
+    });
+  }
+  dollarTRegexp.lastIndex = 0;
+  return matches;
+};
+
+const getI18nKeyAtPosition = (text = '', character = 0) => {
+  const match = getI18nKeyMatches(text).find(
+    ({ index, length }) => character >= index && character <= index + length,
+  );
+  return match && match.key;
+};
 
 module.exports = {
   templateBeginRegexp,
@@ -49,6 +74,8 @@ module.exports = {
   firstSpaceRegexp,
   commentRegexp,
   dollarTRegexp,
+  getI18nKeyAtPosition,
+  getI18nKeyMatches,
   scriptSetupRegexp,
   attributeQuotationRegexp,
 };

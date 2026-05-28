@@ -10,6 +10,10 @@ const {
   warnRegexp,
   attributeQuotationRegexp,
 } = require('./regex');
+const {
+  getI18nText,
+  hasTemplateInterpolation,
+} = require('./interpolation');
 
 const getLineCnWord = ({ lineText, reg, resoloveReg, initWordArr = [] }) => {
   let word = lineText.match(reg) || initWordArr;
@@ -17,12 +21,12 @@ const getLineCnWord = ({ lineText, reg, resoloveReg, initWordArr = [] }) => {
     word = word
       .map((v) => {
         //过滤特殊字符的匹配
-        if (v.match(warnRegexp)) {
+        if (v.match(warnRegexp) && !hasTemplateInterpolation(v)) {
           return false;
         } else {
           return reg === propertyRegexp
             ? v.split('=')[1].replace(attributeQuotationRegexp, '')
-            : v.replace(resoloveReg, '');
+            : getI18nText(v, resoloveReg);
         }
       })
       .filter((v) => !!v)

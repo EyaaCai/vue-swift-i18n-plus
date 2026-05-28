@@ -346,6 +346,27 @@ const getValueFromDotString = (_data, dotString) => {
   return result;
 };
 
+const getLocaleValueByKey = (localeObj = {}, key = '') => {
+  if (Object.prototype.hasOwnProperty.call(localeObj, key)) {
+    return {
+      exist: true,
+      key,
+      value: localeObj[key],
+    };
+  }
+
+  const suffix = `.${key}`;
+  const matchedKey = Object.keys(localeObj).find((item) =>
+    item.endsWith(suffix),
+  );
+
+  return {
+    exist: !!matchedKey,
+    key: matchedKey || key,
+    value: matchedKey ? localeObj[matchedKey] : undefined,
+  };
+};
+
 module.exports = {
   openFileByPath,
   getCellRange,
@@ -357,6 +378,7 @@ module.exports = {
   connect,
   getPrefix,
   getValueFromDotString,
+  getLocaleValueByKey,
   getCustomSetting,
   ...ast,
 };

@@ -3,8 +3,8 @@ const path = require("path");
 const flatten = require("flat");
 const { Hover, MarkdownString } = require("../utils/vs");
 const { operation } = require("../utils/constant");
-const { getLocales, getCustomSetting } = require("../utils");
-const { dollarTRegexp } = require("../utils/regex");
+const { getLocales, getCustomSetting, getLocaleValueByKey } = require("../utils");
+const { getI18nKeyAtPosition } = require("../utils/regex");
 
 /* 获取悬浮内容 */
 const getHoverMsg = (localesPath, key) => {
@@ -19,6 +19,7 @@ const getHoverMsg = (localesPath, key) => {
 			const langName = path.basename(item, ".json");
 			const i18nObj = !!data.toString() ? JSON.parse(data.toString()) : {};
 			const localeObj = flatten(i18nObj);
+			const { exist, key: matchedKey, value } = getLocaleValueByKey(localeObj, key);
 
 			//跳转命令传参
 			const name = `[\`${langName}\`](command:${
@@ -30,13 +31,13 @@ const getHoverMsg = (localesPath, key) => {
 			)} "Open '${item}'")`;
 
 			//详情跳转命令传参
-			const link = localeObj[key]
-				? `[${localeObj[key]}](command:${
+			const link = exist
+				? `[${value}](command:${
 						operation.openI18nFile.cmd
 				  }?${encodeURIComponent(
 						JSON.stringify({
 							fPath: itemPath,
-							key
+							key: matchedKey
 						})
 				  )} "Show In '${item}'")`
 				: "undefined";
@@ -78,12 +79,8 @@ const provideHover = (document, position, token) => {
 	});
 	if (!exist) return;
 	if (i18nValueHover) {
-		const matchPosition = document.getWordRangeAtPosition(
-			position,
-			dollarTRegexp
-		);
-		if (matchPosition) {
-			const i18nKey = document.getText(matchPosition);
+		const i18nKey = getI18nKeyAtPosition(lineText, position.character);
+		if (i18nKey) {
 			const msg = getHoverMsg(localesPath, i18nKey);
 
 			return new Hover(msg);

@@ -18,6 +18,11 @@ const {
   commentRegexp,
 } = require('../utils/regex');
 const { operation } = require('../utils/constant');
+const {
+  buildI18nCall,
+  getI18nText,
+  getTemplateInterpolationArgs,
+} = require('../utils/interpolation');
 const flatten = require('flat');
 const fs = require('fs');
 
@@ -50,7 +55,7 @@ const resoloveLine = ({
         return `${prefix}="${tFunc}('${result}')"`;
       }
     } else {
-      const resultStr = str.replace(resoloveReg, '');
+      const resultStr = getI18nText(str, resoloveReg);
       const result = localeObj[resultStr];
       if (result) {
         //{{$t("xx")}}   template下 html替换
@@ -59,17 +64,18 @@ const resoloveLine = ({
         }
 
         if (reg === scriptRegexp) {
+          const args = getTemplateInterpolationArgs(str);
           //this.$t("xx")   script下 替换
           if (isScript) {
             if (isTS || isSetup) {
-              return "t('" + result + "')";
+              return buildI18nCall('t', result, args);
             }
-            return "this.$t('" + result + "')";
+            return buildI18nCall('this.$t', result, args);
           }
 
           //$t("xx")   template下 {{ "汉字" }}替换
           if (isTemplate) {
-            return `${tFunc}('${result}')`;
+            return buildI18nCall(tFunc, result, args);
           }
         }
       }

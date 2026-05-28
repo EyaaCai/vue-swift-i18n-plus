@@ -5,11 +5,12 @@ const {
 	executeCommand,
 	OverviewRulerLane
 } = require("../utils/vs");
-const { dollarTRegexp } = require("../utils/regex");
+const { getI18nKeyMatches } = require("../utils/regex");
 const {
 	getLocales,
 	getEditor,
 	getCustomSetting,
+	getLocaleValueByKey,
 	showMessage
 } = require("../utils");
 const { defaultStyle, errorStyle, operation } = require("../utils/constant");
@@ -53,22 +54,18 @@ const updateDecorations = currentEditor => {
 			});
 			// 重置 decorationTypes
 			const decorationTypes = {};
-			let match;
-			while ((match = dollarTRegexp.exec(text))) {
-				const matchedValue = match[0];
-				const contentText = localeObj[matchedValue];
-				const startPos = currentEditor.document.positionAt(match.index);
-				const endPos = currentEditor.document.positionAt(
-					match.index + match[0].length
-				);
-				const styleForRegExp = contentText
+			getI18nKeyMatches(text).forEach(({ key, index, length }) => {
+				const { exist, value: contentText } = getLocaleValueByKey(localeObj, key);
+				const startPos = currentEditor.document.positionAt(index);
+				const endPos = currentEditor.document.positionAt(index + length);
+				const styleForRegExp = exist
 					? defaultStyleForRegExp
 					: errorStyleForRegExp;
 				const decoration = {
 					range: new Range(startPos, endPos),
 					renderOptions: {
 						after: {
-							color: contentText?"rgba(153,153,153,0.8)":"red",
+							color: exist?"rgba(153,153,153,0.8)":"red",
 							contentText: ` ➟ ${contentText}`,
 							fontWeight: "normal",
 							fontStyle: "italic",
@@ -88,7 +85,7 @@ const updateDecorations = currentEditor => {
 				decorationTypes[id] = window.createTextEditorDecorationType(
 					styleForRegExp
 				);
-			}
+			});
 			const types = Object.keys(decorationTypes);
 			if (types.length === 0) {
 				showMessage({
