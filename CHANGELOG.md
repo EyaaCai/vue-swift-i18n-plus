@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.1.4
+
+- **Attribute Extraction Fix**: Prevented standalone Vue attribute lines such as `label="中文"` from being extracted as template text.
+- **Split File Formatting Fix**: `Generate Split I18n Files` now opens newly-created files before formatting and retries once when the formatter is not ready, avoiding first-run formatting failures.
+- **Test Harness Fix**: Restored the missing test root path so extension tests can run reliably.
+
 ## 0.1.3
 
 - **Template Interpolation**: Extraction and replacement now understand Vue template text around `{{ }}` and preserve interpolation expressions as i18n params.

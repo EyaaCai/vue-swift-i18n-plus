@@ -5,19 +5,32 @@ const { getCustomSetting, getLocales, showMessage, getEditor } = require('../uti
 const { executeCommand, file, WorkspaceEdit, workspace } = require('../utils/vs');
 const safeEval = require('safe-eval');
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getFormatEdits = async (uri) => {
+  await workspace.openTextDocument(uri);
+  try {
+    return await executeCommand('vscode.executeFormatDocumentProvider', uri);
+  } catch (e) {
+    // Newly-created files can be visible on disk before VS Code has a text model
+    // or formatter ready for them. A short retry keeps first-run generation stable.
+    await delay(100);
+    await workspace.openTextDocument(uri);
+    return executeCommand('vscode.executeFormatDocumentProvider', uri);
+  }
+};
+
 const formatFiles = async (filePaths) => {
-  const edit = new WorkspaceEdit();
   for (const filePath of filePaths) {
     const uri = file(filePath);
-    const edits = await executeCommand('vscode.executeFormatDocumentProvider', uri);
+    const edits = await getFormatEdits(uri);
     if (Array.isArray(edits) && edits.length) {
+      const edit = new WorkspaceEdit();
       edit.set(uri, edits);
+      await workspace.applyEdit(edit);
     }
-  }
-  await workspace.applyEdit(edit);
-  for (const filePath of filePaths) {
     try {
-      const doc = await workspace.openTextDocument(file(filePath));
+      const doc = await workspace.openTextDocument(uri);
       await doc.save();
     } catch (e) {
       console.error(`Failed to save formatted file: ${filePath}`, e);

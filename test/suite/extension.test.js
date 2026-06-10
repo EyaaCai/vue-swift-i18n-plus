@@ -83,6 +83,29 @@ suite('Extension Test Suite', () => {
 		);
 	});
 
+	test('Standalone attribute lines are excluded from template text extraction', () => {
+		const line = '          label="\u5df2\u9000\u6b3e"';
+		assert.strictEqual(line.match(angleBracketSpaceRegexp), null);
+		assert.deepStrictEqual(line.match(propertyRegexp), [
+			' label="\u5df2\u9000\u6b3e"',
+		]);
+		const editor = createEditor(
+			[
+				'<template>',
+				'  <ServiceFeeLine',
+				'    v-if="row.alibbTotalRefundAmount"',
+				'    label="\u5df2\u9000\u6b3e"',
+				'    :value="row.alibbTotalRefundAmount"',
+				'  />',
+				'</template>',
+			].join('\n'),
+			'vue'
+		);
+		assert.deepStrictEqual(Object.values(retrieveCN(editor, 'short')), [
+			'\u5df2\u9000\u6b3e',
+		]);
+	});
+
 	test('Template expressions with Chinese remain script matches', () => {
 		const mixed = 'english \u4e2d\u6587';
 		const lineText = `<span>{{ test ? "${mixed}" : "" }}</span>`;

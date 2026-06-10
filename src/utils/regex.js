@@ -29,10 +29,12 @@ const vueTemplateTextSource =
   `(?:${vueTemplateInterpolationSource}|[^<>{}\\r\\n])*` +
   `[^<>{}\\r\\n]*[\\u4e00-\\u9fa5][^<>{}\\r\\n]*` +
   `(?:${vueTemplateInterpolationSource}|[^<>{}\\r\\n])*`;
+const vueTemplateAttributeSource =
+  `[:@#\\w.-]+\\s*=\\s*(?:["'][^"'\\r\\n]*["'])`;
 
 // 单行  匹配 template ><下的汉字（retrieve），允许静态文本中夹带 Vue {{ }} 插值。
 const angleBracketSpaceRegexp = new RegExp(
-  `(?:(?<=>)${vueTemplateTextSource}(?=<)|^\\s*${vueTemplateTextSource}\\s*$)`,
+  `(?:(?<=>)${vueTemplateTextSource}(?=<)|^(?!\\s*${vueTemplateAttributeSource}\\s*$)\\s*${vueTemplateTextSource}\\s*$)`,
   'g',
 );
 
