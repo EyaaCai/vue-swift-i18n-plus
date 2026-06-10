@@ -12,24 +12,45 @@ const {
 } = require('./regex');
 const {
   getI18nText,
+  getTemplateInterpolationLiteralTexts,
   hasTemplateInterpolation,
+  hasVueTemplateInterpolation,
 } = require('./interpolation');
 
+const cnRegexp = /[\u4e00-\u9fa5]/;
+
 const getLineCnWord = ({ lineText, reg, resoloveReg, initWordArr = [] }) => {
-  let word = lineText.match(reg) || initWordArr;
+  let word = lineText.match(reg);
+  if (!word) return initWordArr;
   if (Array.isArray(word) && word.length > 0) {
     word = word
-      .map((v) => {
+      .reduce((result, v) => {
         //过滤特殊字符的匹配
-        if (v.match(warnRegexp) && !hasTemplateInterpolation(v)) {
-          return false;
-        } else {
-          return reg === propertyRegexp
-            ? v.split('=')[1].replace(attributeQuotationRegexp, '')
-            : getI18nText(v, resoloveReg);
+        if (
+          v.match(warnRegexp) &&
+          !hasTemplateInterpolation(v) &&
+          !(reg === angleBracketSpaceRegexp && hasVueTemplateInterpolation(v))
+        ) {
+          return result;
         }
-      })
-      .filter((v) => !!v)
+
+        const i18nText =
+          reg === propertyRegexp
+            ? v.split('=')[1].replace(attributeQuotationRegexp, '')
+            : getI18nText(v, resoloveReg, {
+                vueTemplate: reg === angleBracketSpaceRegexp,
+              });
+
+        if (cnRegexp.test(i18nText)) {
+          result.push(i18nText);
+        }
+
+        if (hasTemplateInterpolation(v)) {
+          result.push(...getTemplateInterpolationLiteralTexts(v));
+        }
+
+        return result;
+      }, [])
       .concat(initWordArr);
   }
   return word;
@@ -93,14 +114,16 @@ module.exports = (currentEditor, puidType) => {
             resoloveReg: spaceRegexp,
             initWordArr: cnWordArr,
           });
-        } else if (inProperty) {
+        }
+        if (inProperty) {
           cnWordArr = getLineCnWord({
             lineText,
             reg: propertyRegexp,
             resoloveReg: quotationRegexp,
             initWordArr: cnWordArr,
           });
-        } else if (inTemplateScript) {
+        }
+        if (inTemplateScript) {
           cnWordArr = getLineCnWord({
             lineText,
             reg: scriptRegexp,

@@ -8,18 +8,41 @@ const {
 	scriptRegexp,
 	propertyRegexp,
 	angleBracketSpaceRegexp,
+	spaceRegexp,
 	getI18nKeyAtPosition,
 	getI18nKeyMatches
 } = require('../../src/utils/regex');
 const {
 	buildI18nCall,
 	getI18nText,
-	getTemplateInterpolationArgs
+	getTemplateInterpolationArgs,
+	getTemplateInterpolationLiteralTexts,
+	resolveTemplateInterpolationArg,
+	getVueTemplateInterpolationArgs
 } = require('../../src/utils/interpolation');
+const retrieveCN = require('../../src/utils/retrieveCN');
+const { isMixinFile } = require('../../src/utils');
 const { getLocaleValueByKey } = require('../../src/utils');
 const { defaultConfig } = require('../../src/utils/constant');
 const packageJson = require('../../package.json');
 // const myExtension = require('../extension');
+const createEditor = (text, languageId) => {
+	const lines = text.split('\n');
+	return {
+		document: {
+			languageId,
+			lineCount: lines.length,
+			lineAt: (line) => ({ text: lines[line] }),
+			getWordRangeAtPosition: (position, regex) => {
+				regex.lastIndex = 0;
+				const matched = regex.test(lines[position.line]);
+				regex.lastIndex = 0;
+				if (!matched) return undefined;
+				return { start: { line: position.line } };
+			}
+		}
+	};
+};
 
 suite('Extension Test Suite', () => {
 	before(() => {
@@ -67,6 +90,62 @@ suite('Extension Test Suite', () => {
 		assert.deepStrictEqual(lineText.match(scriptRegexp), [`"${mixed}"`]);
 	});
 
+	test('Vue template text with interpolation is normalized as i18n params', () => {
+		const text = '\u53d1\u8fd0\u5355\u53f7\uff1a{{ detail.carriageId }}';
+		assert.deepStrictEqual(
+			`<div>${text}</div>`.match(angleBracketSpaceRegexp),
+			[text]
+		);
+		assert.strictEqual(
+			getI18nText(text, spaceRegexp, { vueTemplate: true }),
+			'\u53d1\u8fd0\u5355\u53f7\uff1a{0}'
+		);
+		assert.deepStrictEqual(
+			getVueTemplateInterpolationArgs(text),
+			['detail.carriageId']
+		);
+		assert.strictEqual(
+			buildI18nCall('$t', '6gsy9j06ouo0', getVueTemplateInterpolationArgs(text)),
+			"$t('6gsy9j06ouo0', [detail.carriageId])"
+		);
+	});
+
+	test('Update I18n extracts template text around Vue interpolations', () => {
+		const source = [
+			'<template>',
+			'  <div class="ship-order-sn">\u53d1\u8fd0\u5355\u53f7\uff1a{{ detail.carriageId }}</div>',
+			'  <div class="pass-list">',
+			'    <Form ref="passForm" :model="form" :label-width="110">',
+			'      <div v-for="(pass, index) in form.arrivalPassList" :key="pass.localKey" class="pass-card">',
+			'        <div class="pass-card-title">',
+			'          <strong v-if="!isEdit">\u901a\u884c\u8bc1{{ index + 1 }}</strong>',
+			'          <span',
+			'            v-if="!isEdit && form.arrivalPassList.length > 1"',
+			'            class="tms-text-btn delete-pass"',
+			'            type="text"',
+			'            @click="handleRemove(index)"',
+			'          >',
+			'            \u5220\u9664',
+			'          </span>',
+			'        </div>',
+			'      </div>',
+			'    </Form>',
+			'  </div>',
+			'  <Button v-if="!isEdit && form.arrivalPassList.length < 10" type="dashed" long @click="handleAdd">',
+			'    + \u65b0\u589e\u901a\u884c\u8bc1',
+			'  </Button>',
+			'</template>',
+		];
+		const editor = createEditor(source.join('\n'), 'vue');
+		const values = Object.values(retrieveCN(editor, 'short')).sort();
+		assert.deepStrictEqual(values, [
+			'+ \u65b0\u589e\u901a\u884c\u8bc1',
+			'\u5220\u9664',
+			'\u53d1\u8fd0\u5355\u53f7\uff1a{0}',
+			'\u901a\u884c\u8bc1{0}',
+		].sort());
+	});
+
 	test('Template literal interpolation is normalized and restored as i18n params', () => {
 		const normalized =
 			'\u672c\u6b21\u5171\u6253\u5370{0}\u4e2a\u8ba2\u5355' +
@@ -87,6 +166,74 @@ suite('Extension Test Suite', () => {
 		assert.strictEqual(
 			buildI18nCall('t', '6gsy9j06ouo0', getTemplateInterpolationArgs(text)),
 			"t('6gsy9j06ouo0', [successOrderIds.value.length])"
+		);
+	});
+
+	test('Template literal interpolation supports quotes inside expressions', () => {
+		const emptyFallback = "`\u4f60\u597d${this.text ? this.text : ''}`";
+		const cnFallback = "`\u4f60\u597d${this.text ? this.text : '\u4e16\u754c'}`";
+		assert.deepStrictEqual(emptyFallback.match(scriptRegexp), [emptyFallback]);
+		assert.deepStrictEqual(cnFallback.match(scriptRegexp), [cnFallback]);
+		assert.strictEqual(getI18nText(emptyFallback, /["'`]/g), '\u4f60\u597d{0}');
+		assert.strictEqual(getI18nText(cnFallback, /["'`]/g), '\u4f60\u597d{0}');
+		assert.deepStrictEqual(
+			getTemplateInterpolationArgs(emptyFallback),
+			["this.text ? this.text : ''"]
+		);
+		assert.deepStrictEqual(
+			getTemplateInterpolationArgs(cnFallback),
+			["this.text ? this.text : '\u4e16\u754c'"]
+		);
+		assert.deepStrictEqual(
+			getTemplateInterpolationLiteralTexts(emptyFallback),
+			[]
+		);
+		assert.deepStrictEqual(
+			getTemplateInterpolationLiteralTexts(cnFallback),
+			['\u4e16\u754c']
+		);
+		assert.strictEqual(
+			resolveTemplateInterpolationArg(
+				"this.text ? this.text : '\u4e16\u754c'",
+				{ '\u4e16\u754c': 'pages.home.world' },
+				'this.$t'
+			),
+			"this.text ? this.text : this.$t('pages.home.world')"
+		);
+	});
+
+	test('Update I18n extracts Chinese literals inside template interpolation expressions', () => {
+		const source = "const label = `\u4f60\u597d${this.text ? this.text : '\u4e16\u754c'}`;";
+		const editor = createEditor(source, 'javascript');
+		const values = Object.values(retrieveCN(editor, 'short')).sort();
+		assert.deepStrictEqual(values, [
+			'\u4f60\u597d{0}',
+			'\u4e16\u754c',
+		].sort());
+	});
+
+	test('Mixin detection enables this.$t for mixins path or Vue options export', () => {
+		assert.strictEqual(
+			isMixinFile({ fsPath: 'D:/project/src/mixins/user.js' }),
+			true
+		);
+		assert.strictEqual(
+			isMixinFile({ fsPath: 'D:/project/src/mixin.js' }),
+			true
+		);
+		assert.strictEqual(
+			isMixinFile({
+				fsPath: 'D:/project/src/helpers/user.js',
+				text: 'export default { methods: { greet() { return "\u4f60\u597d"; } } }'
+			}),
+			true
+		);
+		assert.strictEqual(
+			isMixinFile({
+				fsPath: 'D:/project/src/utils/user.js',
+				text: 'export const greet = () => "\u4f60\u597d";'
+			}),
+			false
 		);
 	});
 

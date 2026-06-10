@@ -17,15 +17,24 @@ const scriptSetupRegexp = /<script[^>]*\ssetup\b[^>]*>/g;
 const commentRegexp = /(\/\/)|(<!--)|(\/\*)/g;
 
 //匹配js中的汉字,配合template range 判断 是否是template中的js汉字
-const scriptRegexp = /["'`][^"'`\r\n]*[\u4e00-\u9fa5][^"'`\r\n]*["'`]/g;
+const scriptRegexp =
+  /`[^`\r\n]*[\u4e00-\u9fa5][^`\r\n]*`|["'][^"'`\r\n]*[\u4e00-\u9fa5][^"'`\r\n]*["']/g;
 
 //匹配属性中的汉字 √
 const propertyRegexp =
   /\s[:\w\.\-\@\#]+=["'](?:['"])?[^"'`\r\n]*[\u4e00-\u9fa5][^"'`\r\n]*(?:['"])?["']/g;
 
-// 单行  匹配 template ><下，空行的汉字（retrieve） ,
-const angleBracketSpaceRegexp =
-  /(?<=>)[^<>{}\r\n]*[\u4e00-\u9fa5][^<>{}\r\n]*(?=<)/g;
+const vueTemplateInterpolationSource = '\\{\\{[^<\\r\\n]*?\\}\\}';
+const vueTemplateTextSource =
+  `(?:${vueTemplateInterpolationSource}|[^<>{}\\r\\n])*` +
+  `[^<>{}\\r\\n]*[\\u4e00-\\u9fa5][^<>{}\\r\\n]*` +
+  `(?:${vueTemplateInterpolationSource}|[^<>{}\\r\\n])*`;
+
+// 单行  匹配 template ><下的汉字（retrieve），允许静态文本中夹带 Vue {{ }} 插值。
+const angleBracketSpaceRegexp = new RegExp(
+  `(?:(?<=>)${vueTemplateTextSource}(?=<)|^\\s*${vueTemplateTextSource}\\s*$)`,
+  'g',
+);
 
 //匹配到特殊字符串说明前面正则匹配有问题，给出提示，去掉匹配
 const warnRegexp = /[{}<>]/g;

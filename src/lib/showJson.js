@@ -20,6 +20,10 @@ const Puid = require("puid");
 const puid = new Puid();
 
 let decorationTypesList = {};
+let activeEditor;
+let refreshTimer;
+let isChangeListenerRegistered = false;
+
 const clearDecorations = () => {
 	Object.keys(decorationTypesList).forEach(v => {
 		decorationTypesList[v].dispose();
@@ -27,9 +31,10 @@ const clearDecorations = () => {
 	decorationTypesList = {};
 };
 
-const updateDecorations = currentEditor => {
+const updateDecorations = (currentEditor, { showNotice = true } = {}) => {
 	clearDecorations();
 	const text = currentEditor.document.getText();
+	const documentVersion = currentEditor.document.version;
 	const defaultLocalesPath = getCustomSetting(
 		currentEditor.document.uri.fsPath,
 		"defaultLocalesPath"
@@ -43,6 +48,7 @@ const updateDecorations = currentEditor => {
 	if (!exist) return;
 	fs.readFile(localesPath, (err, data) => {
 		if (!err) {
+			if (currentEditor.document.version !== documentVersion) return;
 			const i18nObj = !!data.toString() ? JSON.parse(data.toString()) : {};
 			const localeObj = flatten(i18nObj);
 			const matches = {};
@@ -88,7 +94,7 @@ const updateDecorations = currentEditor => {
 			});
 			const types = Object.keys(decorationTypes);
 			if (types.length === 0) {
-				showMessage({
+				showNotice && showMessage({
 					message: `
                 There are no matching values ​​in: ${localesPath}`,
 					editor: currentEditor,
@@ -105,7 +111,7 @@ const updateDecorations = currentEditor => {
 					const message =
 						operation.showI18n.title + " success with: " + localesPath;
 					currentEditor.setDecorations(decorationType, matches[v]);
-					if (p === types.length - 1) {
+					if (showNotice && p === types.length - 1) {
 						showMessage({
 							message,
 							file: localesPath,
@@ -121,13 +127,24 @@ const updateDecorations = currentEditor => {
 module.exports = ({ editor, context }) => {
 	let currentEditor = getEditor(editor);
 	if (!currentEditor) return;
+	activeEditor = currentEditor;
 	updateDecorations(currentEditor);
 	//修改重置编辑器
+	if (isChangeListenerRegistered) return;
+	isChangeListenerRegistered = true;
 	workspace.onDidChangeTextDocument(
 		event => {
-			if (currentEditor && event.document === currentEditor.document) {
-				clearDecorations();
+			if (!activeEditor || event.document !== activeEditor.document) {
+				return;
 			}
+			if (refreshTimer) {
+				clearTimeout(refreshTimer);
+			}
+			refreshTimer = setTimeout(() => {
+				if (activeEditor && event.document === activeEditor.document) {
+					updateDecorations(activeEditor, { showNotice: false });
+				}
+			}, 200);
 		},
 		null,
 		context.subscriptions

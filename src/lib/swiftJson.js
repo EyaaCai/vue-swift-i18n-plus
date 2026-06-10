@@ -8,6 +8,7 @@ const {
   getCustomSetting,
   getValueFromDotString,
   showMessage,
+  isMixinFile,
 } = require('../utils');
 const {
   scriptRegexp,
@@ -22,9 +23,17 @@ const {
   buildI18nCall,
   getI18nText,
   getTemplateInterpolationArgs,
+  getVueTemplateInterpolationArgs,
+  resolveTemplateInterpolationArg,
 } = require('../utils/interpolation');
 const flatten = require('flat');
 const fs = require('fs');
+
+const getTranslateFunc = ({ isScript, isSetup, isTS, isMixinFile }) => {
+  if (isTS || isSetup) return 't';
+  if (isScript && isMixinFile) return 'this.$t';
+  return '$t';
+};
 
 const resoloveLine = ({
   lineText,
@@ -36,10 +45,16 @@ const resoloveLine = ({
   isTemplate,
   isSetup,
   isTS,
+  isMixinFile,
 }) => {
   let text = lineText.replace(reg, (str) => {
     let temp = str;
-    const tFunc = isTS || isSetup ? 't' : '$t';
+    const tFunc = getTranslateFunc({
+      isScript,
+      isSetup,
+      isTS,
+      isMixinFile,
+    });
     if (reg === propertyRegexp) {
       const attrPart = temp.split('=')[0].replace(resoloveReg, '');
       const prefix =
@@ -55,22 +70,26 @@ const resoloveLine = ({
         return `${prefix}="${tFunc}('${result}')"`;
       }
     } else {
-      const resultStr = getI18nText(str, resoloveReg);
+      const resultStr = getI18nText(str, resoloveReg, {
+        vueTemplate: reg === angleBracketSpaceRegexp,
+      });
       const result = localeObj[resultStr];
       if (result) {
         //{{$t("xx")}}   template下 html替换
         if (reg === angleBracketSpaceRegexp) {
-          return `{{${tFunc}('${result}')}}`;
+          const args = getVueTemplateInterpolationArgs(str).map((arg) =>
+            resolveTemplateInterpolationArg(arg, localeObj, tFunc),
+          );
+          return `{{${buildI18nCall(tFunc, result, args)}}}`;
         }
 
         if (reg === scriptRegexp) {
-          const args = getTemplateInterpolationArgs(str);
+          const args = getTemplateInterpolationArgs(str).map((arg) =>
+            resolveTemplateInterpolationArg(arg, localeObj, tFunc),
+          );
           //this.$t("xx")   script下 替换
           if (isScript) {
-            if (isTS || isSetup) {
-              return buildI18nCall('t', result, args);
-            }
-            return buildI18nCall('this.$t', result, args);
+            return buildI18nCall(tFunc, result, args);
           }
 
           //$t("xx")   template下 {{ "汉字" }}替换
@@ -100,6 +119,10 @@ module.exports = ({ editor, context }) => {
   );
   const range = getRange(currentEditor);
   const prefix = getPrefix(currentEditor);
+  const isMixinFileContext = isMixinFile({
+    fsPath: currentEditor.document.uri.fsPath,
+    text: currentEditor.document.getText(),
+  });
   const { localesPath, exist } = getLocales({
     fsPath: currentEditor.document.uri.fsPath,
     defaultLocalesPath,
@@ -171,6 +194,7 @@ module.exports = ({ editor, context }) => {
               isTemplate,
               isSetup: range.isSetup,
               isTS,
+              isMixinFile: isMixinFileContext,
             });
           }
 
@@ -186,6 +210,7 @@ module.exports = ({ editor, context }) => {
               isTemplate,
               isSetup: range.isSetup,
               isTS,
+              isMixinFile: isMixinFileContext,
             });
           }
 
@@ -201,6 +226,7 @@ module.exports = ({ editor, context }) => {
               isTemplate,
               isSetup: range.isSetup,
               isTS,
+              isMixinFile: isMixinFileContext,
             });
           }
         }

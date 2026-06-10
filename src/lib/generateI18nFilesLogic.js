@@ -80,7 +80,7 @@ module.exports = ({ context, uri }) => {
   if (!exist) return;
 
     const filesToFormat = [];
-    fs.readFile(localesPath, 'utf8', (err, data) => {
+    fs.readFile(localesPath, 'utf8', async (err, data) => {
       if (err) return;
 
     let _data = {};
@@ -210,7 +210,29 @@ module.exports = ({ context, uri }) => {
     });
 
     if (filesToFormat.length > 0) {
-      formatFiles(filesToFormat);
+      try {
+        await formatFiles(filesToFormat);
+      } catch (e) {
+        console.error('Failed to format generated i18n files:', e);
+        showMessage({
+          type: 'error',
+          message: 'Split i18n files were generated, but formatting failed. Source JSON has not been cleared.',
+          needOpen: false
+        });
+        return;
+      }
+    }
+
+    try {
+      fs.writeFileSync(localesPath, '{}\n', 'utf8');
+    } catch (e) {
+      console.error(`Failed to clear locales file: ${localesPath}`, e);
+      showMessage({
+        type: 'error',
+        message: `Split i18n files were generated, but failed to clear source JSON: ${localesPath}`,
+        needOpen: false
+      });
+      return;
     }
 
     showMessage({
