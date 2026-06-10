@@ -1,5 +1,19 @@
 # Change Log
 
+## 0.1.4
+
+- **Attribute Extraction Fix**: Prevented standalone Vue attribute lines such as `label="中文"` from being extracted as template text.
+- **Split File Formatting Fix**: `Generate Split I18n Files` now opens newly-created files before formatting and retries once when the formatter is not ready, avoiding first-run formatting failures.
+- **Test Harness Fix**: Restored the missing test root path so extension tests can run reliably.
+
+## 0.1.3
+
+- **Template Interpolation**: Extraction and replacement now understand Vue template text around `{{ }}` and preserve interpolation expressions as i18n params.
+- **Literal Extraction**: Template literals with Chinese fallback text inside interpolation expressions are now extracted more completely.
+- **Mixin Awareness**: Script replacement now prefers `this.$t(...)` for mixin-style files.
+- **Hover Refresh**: `Show I18n Translate Detail` refreshes automatically after edits and avoids stale notifications.
+- **Split File Safety**: `Generate Split I18n Files` only clears the source JSON after formatting succeeds.
+
 ## 0.1.2
 
 - **I18n Detail Fixes**: Fixed `Show I18n Translate Detail` and hover lookup for `t(...)`, `$t(...)`, `this.$t(...)`, and `i18n.t(...)` calls.

@@ -8,8 +8,8 @@
 
 - 位于 `<template></template>`中的汉字，如 `<span>汉字123</span>`
 - 位于 `<template></template>`中的标签属性的汉字，如 `<span title="汉字"></span>`
-- 位于 `<template></template>`中的 `{{`与 `}}`之间的汉字，如 `<span>{{test ? "汉字" : "中文" }}</span>`
-- 位于 `<script></script>`中的 `"`与 `"`之间的汉字，`'`与 `'`之间的**汉字**
+- 位于 `<template></template>`中的 `{{`与 `}}`之间的汉字，如 `<span>{{test ? "汉字" : "中文" }}</span>`，同时会保留插值里的静态中文文本，如 `<span>发运单号：{{ detail.carriageId }}</span>`
+- 位于 `<script></script>`中的 `"`与 `"`之间的汉字，`'`与 `'`之间的**汉字**，并支持模板字符串中的插值参数与兜底中文提取
 - 过滤单行注释
 
 ### 2. 生成更新 Json 路径配置,见[路径及 JSON](#r4EQa)
@@ -33,9 +33,9 @@
 - 汉字检索原则 1，**汉字 123**替换为  **`{{$t('unique-key')}}`**
 - 汉字检索原则 2，**`title="汉字"`**  替换为  **`:title="$t('unique-key')"`**
 - 汉字检索原则 3，**汉字**替换为 **`$t('unique-key')`**
-- 汉字检索原则 4，**汉字**替换为 **`this.$t('unique-key')`**
+- 汉字检索原则 4，**汉字**替换为 **`this.$t('unique-key')`**，在 mixin 文件中也会优先使用这个写法
 - TypeScript、`<script setup>` 场景会优先替换为 **`t('unique-key')`**
-- 模板字符串中的插值会转换为 i18n 参数，例如 **`` `本次共打印${count}个订单` ``** 会提取为 **`本次共打印{0}个订单`**，并替换为 **`t('unique-key', [count])`**
+- 模板字符串中的插值会转换为 i18n 参数，例如 **`` `本次共打印${count}个订单` ``** 会提取为 **`本次共打印{0}个订单`**，并替换为 **`t('unique-key', [count])`**；如果插值表达式里还包含中文兜底文本，也会单独提取
 
 ### 2. 相关正则，见[传送门](https://github.com/EyaaCai/vue-swift-i18n-plus/blob/master/src/utils/regex.js)
 
@@ -48,6 +48,7 @@
 - 支持识别 **`$t('key')`**、**`this.$t('key')`**、**`t('key')`**、**`i18n.t('key')`**
 - 支持短 key 回查完整路径。例如代码中使用 **`t('6gt5yaxm60k0')`**，JSON 中实际保存为 **`views.account.print_page.print_invoice.index.6gt5yaxm60k0`** 时，也会展示对应翻译
 - 用新生成的唯一 key 或短 hash key 来标识，为了防止 json 中的 key 被使用多次
+- 编辑内容后会自动刷新提示结果，无需重复手动执行查看命令
 
 ### 2. 提示依据 Json,见[路径及 JSON](#r4EQa)
 

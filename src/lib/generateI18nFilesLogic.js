@@ -5,19 +5,32 @@ const { getCustomSetting, getLocales, showMessage, getEditor } = require('../uti
 const { executeCommand, file, WorkspaceEdit, workspace } = require('../utils/vs');
 const safeEval = require('safe-eval');
 
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const getFormatEdits = async (uri) => {
+  await workspace.openTextDocument(uri);
+  try {
+    return await executeCommand('vscode.executeFormatDocumentProvider', uri);
+  } catch (e) {
+    // Newly-created files can be visible on disk before VS Code has a text model
+    // or formatter ready for them. A short retry keeps first-run generation stable.
+    await delay(100);
+    await workspace.openTextDocument(uri);
+    return executeCommand('vscode.executeFormatDocumentProvider', uri);
+  }
+};
+
 const formatFiles = async (filePaths) => {
-  const edit = new WorkspaceEdit();
   for (const filePath of filePaths) {
     const uri = file(filePath);
-    const edits = await executeCommand('vscode.executeFormatDocumentProvider', uri);
+    const edits = await getFormatEdits(uri);
     if (Array.isArray(edits) && edits.length) {
+      const edit = new WorkspaceEdit();
       edit.set(uri, edits);
+      await workspace.applyEdit(edit);
     }
-  }
-  await workspace.applyEdit(edit);
-  for (const filePath of filePaths) {
     try {
-      const doc = await workspace.openTextDocument(file(filePath));
+      const doc = await workspace.openTextDocument(uri);
       await doc.save();
     } catch (e) {
       console.error(`Failed to save formatted file: ${filePath}`, e);
@@ -80,7 +93,7 @@ module.exports = ({ context, uri }) => {
   if (!exist) return;
 
     const filesToFormat = [];
-    fs.readFile(localesPath, 'utf8', (err, data) => {
+    fs.readFile(localesPath, 'utf8', async (err, data) => {
       if (err) return;
 
     let _data = {};
@@ -210,7 +223,29 @@ module.exports = ({ context, uri }) => {
     });
 
     if (filesToFormat.length > 0) {
-      formatFiles(filesToFormat);
+      try {
+        await formatFiles(filesToFormat);
+      } catch (e) {
+        console.error('Failed to format generated i18n files:', e);
+        showMessage({
+          type: 'error',
+          message: 'Split i18n files were generated, but formatting failed. Source JSON has not been cleared.',
+          needOpen: false
+        });
+        return;
+      }
+    }
+
+    try {
+      fs.writeFileSync(localesPath, '{}\n', 'utf8');
+    } catch (e) {
+      console.error(`Failed to clear locales file: ${localesPath}`, e);
+      showMessage({
+        type: 'error',
+        message: `Split i18n files were generated, but failed to clear source JSON: ${localesPath}`,
+        needOpen: false
+      });
+      return;
     }
 
     showMessage({

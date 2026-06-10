@@ -43,8 +43,8 @@ const showMessage = ({
   type = 'info',
   message,
   file,
-  editor,
-  callback,
+  editor = null,
+  callback = null,
   needOpen = true,
 }) => {
   const actions = [
@@ -260,6 +260,18 @@ const getEditor = (editor) => {
   return currentEditor;
 };
 
+const vueOptionsRegexp =
+  /export\s+default\s*\{[\s\S]*\b(?:data|methods|computed|watch|props|created|mounted|beforeMount|beforeDestroy|destroyed|beforeUnmount|unmounted)\s*[:(]/;
+
+const isMixinFile = ({ fsPath = '', text = '' } = {}) => {
+  const baseName = path.basename(fsPath, path.extname(fsPath));
+  return (
+    /mixins?/i.test(baseName) ||
+    /(^|[\\/])mixins?([\\/]|$)/i.test(fsPath) ||
+    vueOptionsRegexp.test(text)
+  );
+};
+
 const varifyFile = ({ fsPath, showError, showInfo }) => {
   let exist = false;
   if (!fs.existsSync(fsPath)) {
@@ -380,5 +392,6 @@ module.exports = {
   getValueFromDotString,
   getLocaleValueByKey,
   getCustomSetting,
+  isMixinFile,
   ...ast,
 };
